@@ -1,0 +1,211 @@
+
+<?php 
+//Connect.php
+// $db = new PDO('mysql:host=localhost;dbname=laravel;charset=utf8',"root","");
+
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Daire Çizim</title>
+
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<style>
+		
+		.kutu {
+			margin: 15px;
+			padding: 5px 9px ;
+			border:solid 1px black;
+			display: inline-block;
+			border-radius: 5px;
+			cursor: pointer;
+
+		}
+		.kutular {
+			display: flex;
+			flex-wrap: wrap;
+			column-gap: 10px;
+		}
+		.box {
+			width: 150px;
+			height: 100px;
+			overflow: hidden;
+			border:solid 1px black;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			padding: 0;
+			margin: 0;
+		}
+
+		.box h1 {
+			margin: 0;
+			padding: 0;
+			font-size: 18px;
+		}
+
+		.box p {
+			padding: 0;
+			margin: 0;
+		}
+
+
+		table {
+			width: 50%;
+			
+			height: auto;
+			margin-top: 15px;
+			padding: 15px;
+		}
+
+		table tbody tr {
+			height: 50px;
+		}
+
+		table thead tr th {
+			border: solid 1px black;
+		}
+
+		table tbody tr td {
+			border: solid 1px black;
+			text-align: center;
+
+		}
+	</style>
+</head>
+<body>
+	<div class="kutular">
+
+		<?php
+		$sorgu = $db->prepare("SELECT * FROM like_table");
+		$sorgu->execute();
+		while ($veriler = $sorgu->fetch(PDO::FETCH_ASSOC)){ ?>
+			<div class="box" data-name="<?php echo $veriler["like_isim"] ?>">
+				<h1>Resim</h1>
+				<p><?php echo $veriler["like_isim"] ?></p>
+				<div class="kutu">
+					<i  class="<?php echo ($veriler['like_begeni'] == 1 )? "fa-solid" : "fa-regular"?> fa-thumbs-up"></i>
+				</div>
+			</div>
+
+		<?php } ?>
+	</div>
+	<table>
+		<thead>
+			<tr>
+				<th>Sıra</th>
+				<th>İsim</th>
+				<th>Sonuc</th>
+				<th>İşlemler</th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php 
+			$sorgu = $db->prepare("SELECT * FROM like_table");
+			$sorgu->execute();
+			while ($veriler = $sorgu->fetch(PDO::FETCH_ASSOC)){ ?>
+				<tr>
+					<td> <?php echo $veriler["like_id"] ?>  </td>
+					<td> <?php echo $veriler["like_isim"] ?> </td>
+					<td  class="aciklama" data-name="<?php echo $veriler['like_isim'] ?>"> <?php echo ($veriler['like_begeni'] == 1) ? "Begendi" :"Begenmedi" ?> </td>
+					<td> Sil Degiştir </td>
+				</tr>
+			<?php } ?>			
+		</tbody>
+	</table>
+	<h1 >
+		<i  class="fa-regular fa-thumbs-up"></i>
+	</h1>
+	<script type="text/javascript">
+		let isimler = document.querySelectorAll(".box");
+		isimler.forEach(box => {
+			box.addEventListener("click", function(){
+				let icon = this.querySelector("i");
+				let isim = this.dataset.name ; 
+
+				
+
+				if(icon.classList.contains("fa-solid")) {
+					icon.classList.remove("fa-solid");
+					icon.classList.add("fa-regular");
+
+					/* TABLE İÇERİSİNDEKİ ACİKLAMA KISMI DEĞİŞMESİ  */
+					let aciklama = document.querySelector(`td[data-name="${isim}"]`);
+					if (aciklama) {
+						aciklama.innerText = "Begenmedi";	
+					}
+					
+				
+					/* VERİTABANINA AİT BİLGİLERİN DEĞİŞTİRİLMESİ */
+					let gonder = { like_begeni: 0,  like_isim: isim};
+					fetch("works.php", {
+						method : "POST",
+						headers : { "Content-Type" : "application/json" }, body:JSON.stringify(gonder)
+					}).then(response => response.text()).then(data => console.log(data)).catch(error => console.log(error));
+
+				} else {
+					icon.classList.remove("fa-regular");
+					icon.classList.add("fa-solid");
+
+					/* TABLE İÇERİSİNDEKİ ACİKLAMA KISMI DEĞİŞMESİ  */
+					let aciklama = document.querySelector(`td[data-name="${isim}"]`);
+					if (aciklama) {
+						aciklama.innerText = "Begendi";	
+					}
+					
+					/* VERİTABANINA AİT BİLGİLERİN DEĞİŞTİRİLMESİ */
+					let gonder = { like_begeni: 1,  like_isim: isim};
+					fetch("works.php", {
+						method : "POST",
+						headers : { "Content-Type" : "application/json" }, body:JSON.stringify(gonder)
+					}).then(response => response.text()).then(data => console.log(data)).catch(error => console.log(error));
+				}
+			});
+		});
+	</script>
+
+
+	
+
+</body>
+</html>
+
+
+
+
+<!-- burasi works.php  sayfasi -->
+
+
+<?php /*
+
+include("connect.php");
+
+
+if (isset($_POST)) {
+
+ $veri=  json_decode(file_get_contents("php://input"), true);
+
+ $isim = $veri["like_isim"];
+ $begeni = $veri["like_begeni"];
+
+
+ $guncelle = $db->prepare("UPDATE like_table SET like_begeni=? WHERE like_isim=?");
+ $guncelle->execute([$begeni , $isim]);
+
+ 
+
+ if ($guncelle->rowCount() > 0) {
+    echo "Güncelleme başarılı";
+} else {
+    echo "Güncelleme başarısız";
+}
+
+}*/
+
+?>
+
+
+
